@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include "sys/select.h"
+#include <zephyr/posix/sys/select.h>
 
 #ifdef CONFIG_NATIVE_WINDOWS
 #include "common.h"
