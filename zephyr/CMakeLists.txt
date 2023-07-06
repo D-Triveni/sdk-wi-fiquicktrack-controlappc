@@ -19,6 +19,19 @@ zephyr_library_compile_definitions_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	CONFIG_ZEPHYR
 )
 
+zephyr_library_compile_definitions_ifdef(CONFIG_WFA_QT_FEAT_P2P
+	CONFIG_FEAT_P2P
+)
+
+zephyr_library_compile_definitions_ifdef(CONFIG_WPA_QT_FEAT_WPS
+	CONFIG_FEAT_WPS
+	FEAT_EAP_WSC
+)
+
+zephyr_library_compile_definitions_ifdef(CONFIG_WFA_QT_FEAT_HS20
+	CONFIG_FEAT_HS20
+)
+
 zephyr_include_directories_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	${SOURCES_BASE}
 	${SOURCES_BASE}/zephyr/include

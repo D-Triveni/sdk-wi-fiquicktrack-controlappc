@@ -13,4 +13,14 @@ config WFA_QT_THREAD_STACK_SIZE
 	default 4096
 	help
 	  Thread stack size.
+
+config WFA_QT_FEAT_WPS
+       bool "WPS support"
+
+config WFA_QT_FEAT_P2P
+       bool "P2P feature support"
+       depends on WFA_QT_FEAT_WPS
+
+config WFA_QT_FEAT_HS20
+       bool "HS 2.0 support"
 	

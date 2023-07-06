@@ -57,8 +57,10 @@ void register_apis() {
     register_api(API_DEVICE_RESET, NULL, reset_device_handler);
     register_api(API_START_DHCP, NULL, start_dhcp_handler);
     register_api(API_STOP_DHCP, NULL, stop_dhcp_handler);
+#ifdef FEAT_EAP_WSC
     register_api(API_GET_WSC_PIN, NULL, get_wsc_pin_handler);
     register_api(API_GET_WSC_CRED, NULL, get_wsc_cred_handler);
+#endif
     /* AP */
     register_api(API_AP_START_UP, NULL, start_ap_handler);
     register_api(API_AP_STOP, NULL, stop_ap_handler);
@@ -79,13 +81,18 @@ void register_apis() {
     register_api(API_STA_SEND_BTM_QUERY, NULL, send_sta_btm_query_handler);
     register_api(API_STA_SEND_ANQP_QUERY, NULL, send_sta_anqp_query_handler);
     register_api(API_STA_SCAN, NULL, sta_scan_handler);
+#ifdef CONFIG_FEAT_WPS
     register_api(API_STA_START_WPS, NULL, start_wps_sta_handler);
+#endif
+#ifdef CONFIG_FEAT_HS20
     register_api(API_STA_HS2_ASSOCIATE, NULL, set_sta_hs2_associate_handler);
     register_api(API_STA_ADD_CREDENTIAL, NULL, sta_add_credential_handler);
     register_api(API_STA_INSTALL_PPSMO, NULL, set_sta_install_ppsmo_handler);
+#endif
     /* TODO: Add the handlers */
     register_api(API_STA_SET_CHANNEL_WIDTH, NULL, NULL);
     register_api(API_STA_POWER_SAVE, NULL, NULL);
+#ifdef CONFIG_FEAT_P2P
     register_api(API_P2P_START_UP, NULL, start_up_p2p_handler);
     register_api(API_P2P_FIND, NULL, p2p_find_handler);
     register_api(API_P2P_LISTEN, NULL, p2p_listen_handler);
@@ -97,7 +104,10 @@ void register_apis() {
     register_api(API_P2P_STOP_GROUP, NULL, stop_p2p_group_handler);
     register_api(API_P2P_SET_SERV_DISC, NULL, set_p2p_serv_disc_handler);
     register_api(API_P2P_SET_EXT_LISTEN, NULL, set_p2p_ext_listen_handler);
+#endif
+#ifdef FEAT_EAP_WSC
     register_api(API_STA_ENABLE_WSC, NULL, enable_wsc_sta_handler);
+#endif
 }
 
 static int get_control_app_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
@@ -2337,6 +2347,7 @@ done:
     return 0;
 }
 
+#ifdef CONFIG_FEAT_P2P
 static int start_up_p2p_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     char *message = TLV_VALUE_WPA_S_START_UP_NOT_OK;
     char buffer[S_BUFFER_LEN];
@@ -2655,6 +2666,7 @@ done:
     }
     return 0;
 }
+#endif
 
 static int sta_scan_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int len, status = TLV_VALUE_STATUS_NOT_OK;
@@ -2733,6 +2745,7 @@ done:
     return 0;
 }
 
+#ifdef CONFIG_FEAT_HS20
 static int set_sta_hs2_associate_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
     size_t resp_len;
@@ -3004,7 +3017,9 @@ done:
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_FEAT_P2P
 static int p2p_connect_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     struct wpa_ctrl *w = NULL;
     char buffer[S_BUFFER_LEN], response[BUFFER_LEN];
@@ -3107,7 +3122,7 @@ done:
     }
     return 0;
 }
-
+#endif
 
 static int start_dhcp_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
@@ -3199,7 +3214,7 @@ done:
     return 0;
 }
 
-
+#ifdef FEAT_EAP_WSC
 static int get_wsc_pin_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
     char *message = TLV_VALUE_NOT_OK;
@@ -3265,7 +3280,9 @@ done:
     }
     return 0;
 }
+#endif
 
+#ifdef CONFIG_FEAT_P2P
 static int get_p2p_intent_value_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_OK;
     char *message = TLV_VALUE_OK;
@@ -3283,6 +3300,7 @@ static int get_p2p_intent_value_handler(struct packet_wrapper *req, struct packe
     }
     return 0;
 }
+#endif
 
 static int start_wps_ap_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     struct wpa_ctrl *w = NULL;
@@ -3355,6 +3373,7 @@ done:
     return 0;
 }
 
+#ifdef CONFIG_FEAT_WPS
 static int start_wps_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     struct wpa_ctrl *w = NULL;
     char buffer[S_BUFFER_LEN], response[BUFFER_LEN];
@@ -3419,7 +3438,9 @@ done:
     }
     return 0;
 }
+#endif
 
+#ifdef FEAT_EAP_WSC
 struct _cfg_cred {
     char *key;
     char *tok;
@@ -3523,7 +3544,9 @@ done:
     }
     return 0;
 }
+#endif
 
+#ifdef CONFIG_FEAT_P2P
 static int p2p_invite_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     struct wpa_ctrl *w = NULL;
     char buffer[S_BUFFER_LEN], response[BUFFER_LEN];
@@ -3712,7 +3735,9 @@ done:
     }
     return 0;
 }
+#endif
 
+#ifdef FEAT_EAP_WSC
 static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     char *message = TLV_VALUE_WPA_S_START_UP_NOT_OK;
     char buffer[L_BUFFER_LEN];
@@ -3793,3 +3818,4 @@ static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrap
     fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(message), message);
     return 0;
 }
+#endif
