@@ -273,7 +273,7 @@ static void eloop_handle_signal(int sig)
 	}
 }
 
-
+#ifndef CONFIG_ZEPHYR
 static void eloop_process_pending_signals(void)
 {
 	int i;
@@ -298,7 +298,7 @@ static void eloop_process_pending_signals(void)
 		}
 	}
 }
-
+#endif
 
 int qt_eloop_register_signal(int sig,
 			  void (*handler)(int sig, void *eloop_ctx,
@@ -361,8 +361,9 @@ void qt_eloop_run(void)
 			free(rfds);
 			return;
 		}
+#ifndef CONFIG_ZEPHYR
 		eloop_process_pending_signals();
-
+#endif
 		/* check if some registered timeouts have occurred */
 		if (eloop.timeout) {
 			struct eloop_timeout *tmp;
