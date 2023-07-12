@@ -200,12 +200,9 @@ void qt_main(void) {
     /* Welcome message */
     print_welcome();
 
-    /* Initiate the application */
-    set_wireless_interface(WIRELESS_INTERFACE_DEFAULT);       // Set default wireless interface information
-
     /* Print the run-time information */
     indigo_logger(LOG_LEVEL_INFO, "QuickTrack control app running at: %d", get_service_port());
-    indigo_logger(LOG_LEVEL_INFO, "Wireless Interface: %s", get_wireless_interface());
+    indigo_logger(LOG_LEVEL_INFO, "Wireless Interface: %s", WIRELESS_INTERFACE_DEFAULT);
 
     /* Register the callback */
     register_apis();
