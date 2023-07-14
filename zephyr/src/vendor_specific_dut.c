@@ -23,10 +23,6 @@
 #include "vendor_specific.h"
 #include "utils.h"
 
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-extern int use_openwrt_wpad;
-#endif
-
 #if defined(_OPENWRT_)
 int detect_third_radio() {
     FILE *fp;
@@ -117,12 +113,6 @@ void vendor_init() {
     system(buffer);
 
     interfaces_init();
-#if HOSTAPD_SUPPORT_MBSSID
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-        system("cp /overlay/hostapd /usr/sbin/hostapd");
-        use_openwrt_wpad = 0;
-#endif
-#endif
 #endif
 }
 
@@ -147,16 +137,6 @@ void vendor_device_reset() {
 
     snprintf(buffer, sizeof(buffer), "uci -q delete wireless.wifi1.country");
     system(buffer);
-#endif
-#if HOSTAPD_SUPPORT_MBSSID
-    /* interfaces may be destroyed by hostapd after done the MBSSID testing */
-    interfaces_init();
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-    if (use_openwrt_wpad > 0) {
-        system("cp /overlay/hostapd /usr/sbin/hostapd");
-        use_openwrt_wpad = 0;
-    }
-#endif
 #endif
 }
 
@@ -183,92 +163,6 @@ void openwrt_apply_radio_config(void) {
 #endif
 }
 #endif
-
-/* Called by configure_ap_handler() */
-void configure_ap_enable_mbssid() {
-#ifdef _WTS_OPENWRT_
-    /*
-     * the following uci commands need to reboot openwrt
-     *    so it can not be configured by controlApp
-     *
-     * Manually enable MBSSID on OpenWRT when need to test MBSSID
-     *
-    system("uci set wireless.qcawifi=qcawifi");
-    system("uci set wireless.qcawifi.mbss_ie_enable=1");
-    system("uci commit");
-    */
-#elif defined(_OPENWRT_)
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-    system("cp /rom/usr/sbin/wpad /usr/sbin/hostapd");
-    use_openwrt_wpad = 1;
-#endif
-#endif
-}
-
-void configure_ap_radio_params(char *band, char *country, int channel, int chwidth) {
-#ifdef _WTS_OPENWRT
-char buffer[S_BUFFER_LEN], wifi_name[16];
-
-    if (!strncmp(band, "a", 1)) {
-        snprintf(wifi_name, sizeof(wifi_name), "wifi0");
-    } else {
-        snprintf(wifi_name, sizeof(wifi_name), "wifi1");
-    }
-
-    if (strlen(country) > 0) {
-        snprintf(buffer, sizeof(buffer), "uci set wireless.%s.country=\'%s\'", wifi_name, country);
-        system(buffer);
-    }
-
-    snprintf(buffer, sizeof(buffer), "uci set wireless.%s.channel=\'%d\'", wifi_name, channel);
-    system(buffer);
-
-    if (!strncmp(band, "a", 1)) {
-        if (channel == 165) { // Force 20M for CH 165
-            snprintf(buffer, sizeof(buffer), "uci set wireless.wifi0.htmode=\'HT20\'");
-        } else if (chwidth == 2) { // 160M test cases only
-            snprintf(buffer, sizeof(buffer), "uci set wireless.wifi0.htmode=\'HT160\'");
-        } else if (chwidth == 0) { // 11N only
-            snprintf(buffer, sizeof(buffer), "uci set wireless.wifi0.htmode=\'HT40\'");
-        } else { // 11AC or 11AX
-            snprintf(buffer, sizeof(buffer), "uci set wireless.wifi0.htmode=\'HT80\'");
-        }
-        system(buffer);
-    }
-
-    system("uci commit");
-#else
-    (void) band;
-    (void) country;
-    (void) channel;
-    (void) chwidth;
-#endif
-}
-
-/* void (*callback_fn)(void *), callback of active wlans iterator
- *
- * Called by start_ap_handler() after invoking hostapd
- */
-void start_ap_set_wlan_params(void *if_info) {
-#ifdef _WTS_OPENWRT_
-    char buffer[S_BUFFER_LEN];
-    struct interface_info *wlan = (struct interface_info *) if_info;
-
-    memset(buffer, 0, sizeof(buffer));
-    /* Workaround: openwrt has IOT issue with intel AX210 AX mode */
-    sprintf(buffer, "cfg80211tool %s he_ul_ofdma 0", wlan->ifname);
-    system(buffer);
-    /* Avoid target assert during channel switch */
-    sprintf(buffer, "cfg80211tool %s he_ul_mimo 0", wlan->ifname);
-    system(buffer);
-    sprintf(buffer, "cfg80211tool %s twt_responder 0", wlan->ifname);
-    system(buffer);
-
-    printf("set_wlan_params: %s\n", buffer);
-#else
-    (void) if_info;
-#endif
-}
 
 /* Return addr of P2P-device if there is no GO or client interface */
 int get_p2p_mac_addr(char *mac_addr, size_t size) {

@@ -63,10 +63,6 @@ FILE *app_log;
 extern struct sockaddr_in *tool_addr;
 #endif
 
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-int use_openwrt_wpad = 0;
-#endif
-
 void send_continuous_loopback_packet(void *eloop_ctx, void *sock_ctx);
 
 #include <zephyr/net/net_ip.h>
@@ -1096,15 +1092,6 @@ void reset_default_wireless_interface_info() {
     default_interface = NULL;
 }
 
-/* Parse BSS IDENTIFIER TLV */
-void parse_bss_identifier(int bss_identifier, struct bss_identifier_info* bss) {
-    bss->band = bss_identifier & 0x0F;
-    bss->identifier = (bss_identifier & 0xF0) >> 4;
-    bss->mbssid_enable = (bss_identifier & 0x100) >> 8;
-    bss->transmitter = (bss_identifier & 0x200) >> 9;
-    return;
-}
-
 int clear_interfaces_resource() {
     int i, ret = 0;
     for (i = 0; i < interface_count; i++)
@@ -1152,14 +1139,6 @@ char* get_all_hapd_conf_files(int *swap_hapd) {
     memset(conf_files, 0, sizeof(conf_files));
     for (i = 0; i < interface_count; i++) {
         if (interfaces[i].identifier != UNUSED_IDENTIFIER) {
-#ifdef HOSTAPD_SUPPORT_MBSSID_WAR
-            if (use_openwrt_wpad && !interfaces[i].mbssid_enable) {
-                *swap_hapd = 1;
-                continue;
-            } else if (!use_openwrt_wpad && interfaces[i].mbssid_enable) {
-                continue;
-            }
-#endif
             valid_id_cnt++;
             strncat(conf_files, interfaces[i].hapd_conf_file, strlen(interfaces[i].hapd_conf_file));
             strcat(conf_files, " ");
