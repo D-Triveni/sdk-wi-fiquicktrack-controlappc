@@ -9,3 +9,9 @@ config WFA_QT_CONTROL_APP
 	depends on !POSIX_API
 	select PTHREAD_IPC
 	bool "WFA Quicktrack control app"
+
+config WFA_QT_THREAD_STACK_SIZE
+        int "Thread stack size"
+        default 4096
+        help
+          Thread stack size.
