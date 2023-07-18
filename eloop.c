@@ -20,7 +20,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#ifdef CONFIG_ZEPHYR
+#include <zephyr/posix/sys/select.h>
+#else
 #include "sys/select.h"
+#endif
 
 #ifdef CONFIG_NATIVE_WINDOWS
 #include "common.h"
@@ -235,7 +239,7 @@ int qt_eloop_cancel_timeout(void (*handler)(void *eloop_ctx, void *sock_ctx),
 }
 
 
-#ifndef CONFIG_NATIVE_WINDOWS
+#if !defined(CONFIG_NATIVE_WINDOWS) && !defined(CONFIG_ZEPHYR)
 static void eloop_handle_alarm(int sig)
 {
 	(void) sig;
@@ -247,9 +251,10 @@ static void eloop_handle_alarm(int sig)
 	vendor_deinit();
 	exit(1);
 }
-#endif /* CONFIG_NATIVE_WINDOWS */
+#endif /* CONFIG_NATIVE_WINDOWS && CONFIG_ZEPHYR*/
 
 
+#ifndef CONFIG_ZEPHYR
 static void eloop_handle_signal(int sig)
 {
 	int i;
@@ -324,6 +329,7 @@ int qt_eloop_register_signal(int sig,
 
 	return 0;
 }
+#endif
 
 void qt_eloop_run(void)
 {
@@ -361,7 +367,9 @@ void qt_eloop_run(void)
 			free(rfds);
 			return;
 		}
+#ifndef CONFIG_ZEPHYR
 		eloop_process_pending_signals();
+#endif
 
 		/* check if some registered timeouts have occurred */
 		if (eloop.timeout) {
