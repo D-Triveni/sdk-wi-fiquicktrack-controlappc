@@ -30,8 +30,6 @@
 #include "hs2_profile.h"
 
 static char pac_file_path[S_BUFFER_LEN] = {0};
-struct interface_info* band_transmitter[16];
-struct interface_info* band_first_wlan[16];
 extern struct sockaddr_in *tool_addr;
 
 extern const char *inet_ntop(int af, const void *src, char *dst, size_t size)
@@ -108,51 +106,6 @@ static int get_control_app_handler(struct packet_wrapper *req, struct packet_wra
 static int reset_device_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
     char *message = TLV_VALUE_RESET_NOT_OK;
-    char role[TLV_VALUE_SIZE], log_level[TLV_VALUE_SIZE], band[TLV_VALUE_SIZE];
-    struct tlv_hdr *tlv = NULL;
-
-    /* TLV: ROLE */
-    tlv = find_wrapper_tlv_by_id(req, TLV_ROLE);
-    memset(role, 0, sizeof(role));
-    if (tlv) {
-        memcpy(role, tlv->value, tlv->len);
-    } else {
-        goto done;
-    }
-    /* TLV: DEBUG_LEVEL */
-    tlv = find_wrapper_tlv_by_id(req, TLV_DEBUG_LEVEL);
-    memset(log_level, 0, sizeof(log_level));
-    if (tlv) {
-        memcpy(log_level, tlv->value, tlv->len);
-    }
-    /* TLV: TLV_BAND */
-    memset(band, 0, sizeof(band));
-    tlv = find_wrapper_tlv_by_id(req, TLV_BAND);
-    if (tlv) {
-        memcpy(band, tlv->value, tlv->len);
-    }
-
-    if (atoi(role) == DUT_TYPE_STAUT) {
-        /* TODO:
-         * Need to implement this for zephyr
-         */
-
-    } else if (atoi(role) == DUT_TYPE_P2PUT) {
-        /* If TP is P2P client, GO can't stop before client removes group monitor if */
-        // sprintf(buffer, "killall %s 1>/dev/null 2>/dev/null", get_wpas_exec_file());
-        // reset_interface_ip(get_wireless_interface());
-    }
-
-    if (strcmp(band, TLV_BAND_24GHZ) == 0) {
-        set_default_wireless_interface_info(BAND_24GHZ);
-    } else if (strcmp(band, TLV_BAND_5GHZ) == 0) {
-        set_default_wireless_interface_info(BAND_5GHZ);
-    } else if (strcmp(band, TLV_BAND_6GHZ) == 0) {
-        set_default_wireless_interface_info(BAND_6GHZ);
-    }
-
-    memset(band_transmitter, 0, sizeof(band_transmitter));
-    memset(band_first_wlan, 0, sizeof(band_first_wlan));
 
     vendor_device_reset();
 
@@ -161,7 +114,6 @@ static int reset_device_handler(struct packet_wrapper *req, struct packet_wrappe
     status = TLV_VALUE_STATUS_OK;
     message = TLV_VALUE_RESET_OK;
 
-done:
     fill_wrapper_message_hdr(resp, API_CMD_RESPONSE, req->hdr.seq);
     fill_wrapper_tlv_byte(resp, TLV_STATUS, status);
     fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(message), message);
@@ -187,7 +139,7 @@ static int assign_static_ip_handler(struct packet_wrapper *req, struct packet_wr
         goto response;
     }
 
-    ifname = get_wireless_interface();
+    ifname = WIRELESS_INTERFACE_DEFAULT;
 
     /* Release IP address from interface */
     reset_interface_ip(ifname);
@@ -231,7 +183,7 @@ static int get_mac_addr_handler(struct packet_wrapper *req, struct packet_wrappe
     char mac_addr[S_BUFFER_LEN];
 
     if (req->tlv_num == 0) {
-        get_mac_address(mac_addr, sizeof(mac_addr), get_wireless_interface());
+        get_mac_address(mac_addr, sizeof(mac_addr), WIRELESS_INTERFACE_DEFAULT);
         status = TLV_VALUE_STATUS_OK;
         message = TLV_VALUE_OK;
 
@@ -266,7 +218,7 @@ static int get_mac_addr_handler(struct packet_wrapper *req, struct packet_wrappe
         /* Get P2P GO/Client or Device MAC */
         if (get_p2p_mac_addr(mac_addr, sizeof(mac_addr))) {
             indigo_logger(LOG_LEVEL_INFO, "Can't find P2P Device MAC. Use wireless IF MAC");
-            get_mac_address(mac_addr, sizeof(mac_addr), get_wireless_interface());
+            get_mac_address(mac_addr, sizeof(mac_addr), WIRELESS_INTERFACE_DEFAULT);
         }
         status = TLV_VALUE_STATUS_OK;
         message = TLV_VALUE_OK;
@@ -355,8 +307,8 @@ static int start_loopback_server(struct packet_wrapper *req, struct packet_wrapp
     memset(local_ip, 0, sizeof(local_ip));
     if (get_p2p_group_if(if_name, sizeof(if_name)) == 0 && find_interface_ip(local_ip, sizeof(local_ip), if_name)) {
         indigo_logger(LOG_LEVEL_DEBUG, "use %s", if_name);
-    } else if (find_interface_ip(local_ip, sizeof(local_ip), get_wireless_interface())) {
-        indigo_logger(LOG_LEVEL_DEBUG, "use %s", get_wireless_interface());
+    } else if (find_interface_ip(local_ip, sizeof(local_ip), WIRELESS_INTERFACE_DEFAULT)) {
+        indigo_logger(LOG_LEVEL_DEBUG, "use %s", WIRELESS_INTERFACE_DEFAULT);
 // #ifdef __TEST__
     } else if (find_interface_ip(local_ip, sizeof(local_ip), "eth0")) {
         indigo_logger(LOG_LEVEL_DEBUG, "use %s", "eth0");
@@ -410,7 +362,7 @@ static int get_ip_addr_handler(struct packet_wrapper *req, struct packet_wrapper
     if (role == DUT_TYPE_P2PUT && get_p2p_group_if(if_name, sizeof(if_name)) == 0 && find_interface_ip(buffer, sizeof(buffer), if_name)) {
         status = TLV_VALUE_STATUS_OK;
         message = TLV_VALUE_OK;
-    } else if (find_interface_ip(buffer, sizeof(buffer), get_wireless_interface())) {
+    } else if (find_interface_ip(buffer, sizeof(buffer), WIRELESS_INTERFACE_DEFAULT)) {
         status = TLV_VALUE_STATUS_OK;
         message = TLV_VALUE_OK;
     } else {
