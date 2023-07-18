@@ -736,7 +736,11 @@ struct interface_info* assign_wireless_interface_info(struct bss_identifier_info
             interfaces[i].identifier = bss->identifier;
             interfaces[i].mbssid_enable = bss->mbssid_enable;
             interfaces[i].transmitter = bss->transmitter;
+            interfaces[i].hapd_bss_id = band_mbssid_cnt[bss->band];
             band_mbssid_cnt[bss->band]++;
+	    /* TODO:
+	     * Update hapd_conf_file param
+	     */
             return &interfaces[i];
         }
     }
@@ -811,24 +815,6 @@ int show_wireless_interface_info() {
 }
 
 int parse_wireless_interface_info(char *info) {
-    char *token = NULL;
-    char *delimit = ",";
-
-    token = strtok(info, delimit);
-
-    while(token != NULL) {
-        if (strncmp(token, "2:", 2) == 0) {
-            add_wireless_interface_info(BAND_24GHZ, -1, token+2);
-        } else if (strncmp(token, "5:", 2) == 0) {
-            add_wireless_interface_info(BAND_5GHZ, -1, token+2);
-        } else if (strncmp(token, "6:", 2) == 0) {
-            add_wireless_interface_info(BAND_6GHZ, -1, token+2);
-        } else {
-            return -1;
-        }
-        token = strtok(NULL, delimit);
-    }
-
     return 0;
 }
 
@@ -839,6 +825,7 @@ char* get_default_wireless_interface_info() {
             return interfaces[i].ifname;
         }
     }
+
     if (default_interface) {
         return default_interface->ifname;
     }
@@ -846,20 +833,17 @@ char* get_default_wireless_interface_info() {
         return interfaces[0].ifname;
 }
 
-void set_default_wireless_interface_info(int band) {
-    int i;
-
-    for (i = 0; i < interface_count; i++) {
-        if (interfaces[i].band == band) {
-            default_interface = &interfaces[i];
-            indigo_logger(LOG_LEVEL_DEBUG, "Set default_interface %s", default_interface->ifname);
-            break;
-        }
-    }
-}
-
 void reset_default_wireless_interface_info() {
     default_interface = NULL;
+}
+
+/* Parse BSS IDENTIFIER TLV */
+void parse_bss_identifier(int bss_identifier, struct bss_identifier_info* bss) {
+    bss->band = bss_identifier & 0x0F;
+    bss->identifier = (bss_identifier & 0xF0) >> 4;
+    bss->mbssid_enable = (bss_identifier & 0x100) >> 8;
+    bss->transmitter = (bss_identifier & 0x200) >> 9;
+    return;
 }
 
 int clear_interfaces_resource() {
@@ -902,23 +886,13 @@ int is_band_enabled(int band) {
 }
 
 char* get_wireless_interface() {
-    return get_default_wireless_interface_info();
+    if (interface_count > 0)
+        return get_default_wireless_interface_info();
+
+    return WIRELESS_INTERFACE_DEFAULT;
 }
 
 int set_wireless_interface(char *name) {
-    memset(interfaces, 0, sizeof(interfaces));
-    interface_count = 0;
-
-    if (strstr(name, ":") || strstr(name, ",")) {
-        return parse_wireless_interface_info(name);
-    } else {
-#ifdef _LAPTOP_
-        add_wireless_interface_info(BAND_24GHZ, -1, name);
-        add_wireless_interface_info(BAND_5GHZ, -1, name);
-#else
-        return -1;
-#endif
-    }
     return 0;
 }
 
