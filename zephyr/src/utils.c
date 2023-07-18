@@ -46,11 +46,7 @@ int syslog_level = LOG_LEVEL_INFO;
 
 static struct loopback_info loopback;
 
-#if UPLOAD_TC_APP_LOG
-/* per test case control app log */
-FILE *app_log;
 extern struct sockaddr_in *tool_addr;
-#endif
 
 void send_continuous_loopback_packet(void *eloop_ctx, void *sock_ctx);
 
@@ -88,11 +84,6 @@ void debug_print_timestamp(void) {
         strftime(buffer, sizeof(buffer), "%b %d %H:%M:%S", info);
     }
     printf("%s ", buffer);
-#if UPLOAD_TC_APP_LOG
-    if (app_log) {
-        fprintf(app_log, "%s ", buffer);
-    }
-#endif
 }
 
 void indigo_logger(int level, const char *fmt, ...) {
@@ -138,14 +129,6 @@ void indigo_logger(int level, const char *fmt, ...) {
         vprintf(format, ap);
         va_end(ap);
         printf("\n");
-#if UPLOAD_TC_APP_LOG
-        if (app_log) {
-            va_start(ap, fmt);
-            vfprintf(app_log, format, ap);
-            fprintf(app_log, "\n");
-            va_end(ap);
-        }
-#endif
     }
 
 #ifdef _SYSLOG_
@@ -175,32 +158,6 @@ void indigo_logger(int level, const char *fmt, ...) {
 #endif
 }
 
-void open_tc_app_log() {
-#if UPLOAD_TC_APP_LOG
-    if (app_log) {
-        fclose(app_log);
-        app_log = NULL;
-    }
-    app_log = fopen(APP_LOG_FILE, "w");
-    if (app_log == NULL) {
-        indigo_logger(LOG_LEVEL_ERROR, "Failed to open the file %s", APP_LOG_FILE);
-    }
-#endif
-}
-
-/* Close file handle and upload test case control app log */
-void close_tc_app_log() {
-#if UPLOAD_TC_APP_LOG
-    if (app_log) {
-        fclose(app_log);
-        app_log = NULL;
-        if (tool_addr != NULL) {
-            http_file_post(qt_inet_ntoa(tool_addr->sin_addr), TOOL_POST_PORT, HAPD_UPLOAD_API, APP_LOG_FILE);
-        }
-    }
-#endif
-}
-
 /* System */
 int pipe_command(char *buffer, int buffer_size, char *cmd, char *parameter[]) {
     return -1;
@@ -216,25 +173,6 @@ int write_file(char *fn, char *buffer, int len) {
 
 int append_file(char *fn, char *buffer, int len) {
     return -1;
-}
-
-/* strrstr(), reversed strstr(), is not available in some compilers. Here is the implementation. */
-static char* indigo_strrstr(char *input, const char *token) {
-    char *result = NULL, *p = NULL;
-
-    if (*token == '\0') {
-        return (char *) input;
-    }
-
-    while (1) {
-        p = strstr(input, token);
-        if (p == NULL)
-            break;
-        result = p;
-        input = p + 1;
-    }
-
-    return result;
 }
 
 /* Loopback */
@@ -829,30 +767,6 @@ int is_ht40minus_chan(int chan) {
         return 0;
 }
 
-/* String operation */
-size_t strlcpy(char *dest, const char *src, size_t siz) {
-	const char *s = src;
-	size_t left = siz;
-
-	if (left) {
-		/* Copy string up to the maximum size of the dest buffer */
-		while (--left != 0) {
-			if ((*dest++ = *s++) == '\0')
-				break;
-		}
-	}
-
-	if (left == 0) {
-		/* Not enough room for the string; force NUL-termination */
-		if (siz != 0)
-			*dest = '\0';
-		while (*s++)
-			; /* determine total src string length */
-	}
-
-	return s - src - 1;
-}
-
 int get_key_value(char *value, char *buffer, char *token) {
     char *ptr = NULL, *endptr = NULL;
     char _token[S_BUFFER_LEN];
@@ -889,173 +803,3 @@ int get_key_value(char *value, char *buffer, char *token) {
 void remove_pac_file(char *path) {
 }
 
-/* HTTP post request */
-/* Internal. Generate random string for the boundary */
-static void rand_string(char *str, int size) {
-    const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-    int i = 0, key = 0;
-
-    memset(str, 0, size);
-    srand(time(NULL));
-    for (i = 0; i < size; i++) {
-        key = rand() % (int)(sizeof(charset)-1);
-        str[i] = charset[key];
-    }
-}
-
-/* Internal. Generate the boundary */
-static void random_boundary(char *boundary, int size) {
-    memset(boundary, '-', size);
-    boundary[size-1] = '\0';
-    rand_string(&boundary[size - (16+1)], 16);
-}
-
-/* Internal. Generate HTTP header for the multipart POST */
-static char* http_header_multipart(char *path, char *host, int port, int content_length, char *boundary) {
-    char *buffer = NULL;
-
-    buffer = (char*)malloc(sizeof(char)*256);
-    sprintf(buffer,
-        "POST %s HTTP/1.0\r\n" \
-        "Host: %s:%d\r\n" \
-        "User-Agent: ControlAppC\r\n" \
-        "Accept: */*\r\n" \
-        "Content-Length: %d\r\n" \
-        "Connection: close\r\n" \
-        "Content-Type: multipart/form-data; boundary=%s\r\n\r\n",
-        path,
-        host,
-        port,
-        content_length,
-        boundary
-    );
-
-    return buffer;
-}
-
-/* Internal. Generate HTTP body for uploaded file */
-static char* http_body_multipart(char *boundary, char *param_name, char *file_name) {
-    char *buffer = NULL, *file_content = NULL;
-    int body_size = 0, file_size = 0;
-    struct stat st;
-    char *file_ptr = NULL;
-
-    /* Get the file size and content */
-    memset(&st, 0, sizeof(st));
-    stat(file_name, &st);
-    file_size = st.st_size;
-    if (file_size == 0) {
-        return buffer;
-    }
-    file_content = read_file(file_name);
-
-    /* Fill the body buffer */
-    body_size = file_size + 256;
-    buffer = (char*)malloc(body_size*sizeof(char));
-    memset(buffer, 0, body_size);
-
-    file_ptr = indigo_strrstr(file_name, "/");
-    if (file_ptr) {
-        file_ptr += 1;
-    } else {
-        file_ptr = file_name;
-    }
-
-    sprintf(buffer,
-        "--%s\r\n" \
-        "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n" \
-        "Content-Type: text/plain\r\n\r\n" \
-        "%s\r\n\r\n" \
-        "--%s--",
-        boundary,
-        param_name,
-        file_ptr,
-        file_content,
-        boundary
-    );
-    free(file_content);
-    return buffer;
-}
-
-/* Internal. Create HTTP socket */
-static int http_socket(char *host, int port) {
-    int socketfd = 0;
-    struct sockaddr_in server_addr;
-
-    if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        return -1;
-    }
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = inet_addr(host);
-
-    if (connect(socketfd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1) {
-        close(socketfd);
-        return -1;
-    }
-
-    return socketfd;
-}
-
-/*  Upload log by specifying the host, port, path, and the local file name */
-int http_file_post(char *host, int port, char *path, char *file_name) {
-    int socketfd = 0, numbytes = 0;
-    char *header = NULL, *body = NULL;
-    char boundary[64];
-    char response[10240];
-
-    /* Generate boundary, header and body */
-    random_boundary(boundary, 41);
-    /* Parameter name needs to match with CompletedFileUpload in API */
-    if (!strcmp(path, HAPD_UPLOAD_API))
-        body = http_body_multipart(boundary, "hostApdLogFile", file_name);
-    else if (!strcmp(path, WPAS_UPLOAD_API))
-        body = http_body_multipart(boundary, "wpasLogFile", file_name);
-    else {
-        indigo_logger(LOG_LEVEL_ERROR, "Tool doesn't support %s ?", path);
-        goto done;
-    }
-    /* Return if body is NULL */
-    if (body == NULL) {
-        goto done;
-    }
-
-    header = http_header_multipart(path, host, port, strlen(body), boundary);
-
-    socketfd = http_socket(host, port);
-    if (send(socketfd, header, strlen(header), 0) == -1){
-        indigo_logger(LOG_LEVEL_ERROR, "Failed to open HTTP socket");
-        goto done;
-    }
-
-    if (send(socketfd, body, strlen(body), 0) == -1){
-        indigo_logger(LOG_LEVEL_ERROR, "Failed to upload file");
-        goto done;
-    }
-
-    while ((numbytes=recv(socketfd, response, sizeof(response), 0)) > 0) {
-        response[numbytes] = '\0';
-        indigo_logger(LOG_LEVEL_DEBUG, "Server response: %s", response);
-    }
-    indigo_logger(LOG_LEVEL_INFO, "Upload completes");
-
-done:
-    if (header) {
-        free(header);
-    }
-    if (body) {
-        free(body);
-    }
-    if (socketfd) {
-        close(socketfd);
-    }
-
-    return 0;
-}
-
-int file_exists(const char *fname)
-{
-	struct stat s;
-	return stat(fname, &s) == 0;
-}

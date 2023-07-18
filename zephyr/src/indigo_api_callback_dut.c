@@ -29,7 +29,6 @@
 #include "indigo_api_callback.h"
 #include "hs2_profile.h"
 
-static char pac_file_path[S_BUFFER_LEN] = {0};
 extern struct sockaddr_in *tool_addr;
 
 extern const char *inet_ntop(int af, const void *src, char *dst, size_t size)
@@ -374,37 +373,10 @@ static int get_ip_addr_handler(struct packet_wrapper *req, struct packet_wrapper
 }
 
 static int stop_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
-    int reset = 0;
-    char reset_type[16];
-    struct tlv_hdr *tlv = NULL;
 
-    /* TLV: RESET_TYPE */
-    tlv = find_wrapper_tlv_by_id(req, TLV_RESET_TYPE);
-    memset(reset_type, 0, sizeof(reset_type));
-    if (tlv) {
-        memcpy(reset_type, tlv->value, tlv->len);
-        reset = atoi(reset_type);
-        indigo_logger(LOG_LEVEL_DEBUG, "Reset Type: %d", reset);
-    }
-
-    if (reset == RESET_TYPE_INIT) {
-        open_tc_app_log();
-
-        /* remove pac file if needed */
-        if (strlen(pac_file_path)) {
-            remove_pac_file(pac_file_path);
-            memset(pac_file_path, 0, sizeof(pac_file_path));
-        }
-    }
-
-    /* Test case teardown case */
-    if (reset == RESET_TYPE_TEARDOWN) {
-        close_tc_app_log();
-    }
-
-    fill_wrapper_message_hdr(resp, API_CMD_RESPONSE, req->hdr.seq);
-    fill_wrapper_tlv_byte(resp, TLV_STATUS, TLV_VALUE_STATUS_OK);
-    fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(TLV_VALUE_WPA_S_STOP_OK), TLV_VALUE_WPA_S_STOP_OK);
+    /* TODO:
+     * Need to implement this for zephyr
+     */
 
     return 0;
 }
