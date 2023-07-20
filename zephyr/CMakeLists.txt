@@ -7,6 +7,11 @@
 zephyr_library()
 
 set(SOURCES_BASE ${CMAKE_CURRENT_SOURCE_DIR}/../)
+set(HOSTAP_BASE ${CMAKE_CURRENT_SOURCE_DIR}/../../hostap)
+set(WPA_SUPPLICANT_BASE ${HOSTAP_BASE}/wpa_supplicant)
+set(COMMON_SRC_BASE ${HOSTAP_BASE}/src)
+
+
 # Enable of same options as upstream points to issues with Zephyr
 # headers, so, for now, we disable them.
 zephyr_library_compile_options_ifdef(CONFIG_WFA_QT_CONTROL_APP
@@ -14,6 +19,8 @@ zephyr_library_compile_options_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	# False positive, not going away even with null check
 	-Wno-format-overflow
 )
+
+zephyr_library_compile_definitions(CONFIG_CTRL_IFACE_ZEPHYR)
 
 zephyr_library_compile_definitions_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	CONFIG_ZEPHYR
