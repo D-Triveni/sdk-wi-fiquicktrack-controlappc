@@ -34,6 +34,11 @@ typedef uint32_t u_int32_t;
 #include "utils.h"
 #include "eloop.h"
 
+#include <common/wpa_ctrl.h>
+#include <ctrl_iface_zephyr.h>
+#include <supp_main.h>
+#include <l2_packet/l2_packet.h>
+
 #define ICMP_ECHO 8
 #define ICMP_ECHOREPLY 0
 #define usleep(x) k_sleep(K_SECONDS((x)/1000000))
@@ -227,7 +232,7 @@ int loopback_server_start(char *local_ip, char *local_port, int timeout) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     if (local_ip) {
-        addr.sin_addr.s_addr = inet_addr(local_ip);
+        inet_pton(AF_INET, local_ip, &addr.sin_addr.s_addr);
     }
 
     if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -608,18 +613,35 @@ int send_broadcast_arp(char *target_ip, int *send_count, int rate) {
 
 int find_interface_ip(char *ipaddr, int ipaddr_len, char *name) {
 
-    /* TODO:
-     * Need to implement this for zephyr
-     */
+    struct wpa_supplicant *wpa_s;
+    char tmp[30];
 
-    return 0;
+    wpa_s = z_wpas_get_handle_by_ifname(name);
+    if (!wpa_s) {
+        indigo_logger(LOG_LEVEL_ERROR, "Unable to find the interface: %s, quitting", name);
+        return 0;
+    }
+
+    if (wpa_s->l2 && l2_packet_get_ip_addr(wpa_s->l2, tmp, sizeof(tmp)) >= 0) {
+        strcpy(ipaddr, tmp);
+    }
+
+    return 1;
 }
 
 int get_mac_address(char *buffer, int size, char *interface) {
 
-    /* TODO:
-     * Need to implement this for zephyr
-     */
+    STRUCT_SECTION_FOREACH(net_if, iface)
+    {
+        const struct device *dev = net_if_get_device(iface);
+        if(!strcmp(dev->name, interface)) {
+            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
+                    iface->if_dev->link_addr.addr[0]&0xff, iface->if_dev->link_addr.addr[1]&0xff,
+                    iface->if_dev->link_addr.addr[2]&0xff, iface->if_dev->link_addr.addr[3]&0xff,
+                    iface->if_dev->link_addr.addr[4]&0xff, iface->if_dev->link_addr.addr[5]&0xff);
+            return 0;
+        }
+    }
 
     return 1;
 }
@@ -641,6 +663,27 @@ int control_interface(char *ifname, char *op) {
 }
 
 int set_interface_ip(char *ifname, char *ip) {
+
+    const struct device *dev = device_get_binding(ifname);
+    struct net_if *wlan_iface = net_if_lookup_by_dev(dev);
+    struct in_addr addr;
+
+    if (!wlan_iface) {
+	indigo_logger(LOG_LEVEL_ERROR, "Cannot find network interface: %s", dev->name);
+	return -1;
+    }
+
+    if (sizeof(ip) > 1) {
+        if (net_addr_pton(AF_INET, ip, &addr)) {
+            indigo_logger(LOG_LEVEL_ERROR, "Invalid address: %s", ip);
+            return -1;
+        }
+        net_if_ipv4_addr_add(wlan_iface, &addr, NET_ADDR_MANUAL, 0);
+    } else {
+        indigo_logger(LOG_LEVEL_ERROR, "Address not configured");
+	return -1;
+    }
+
     return 0;
 }
 

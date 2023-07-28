@@ -30,6 +30,7 @@
 #include "utils.h"
 
 #include <zephyr/posix/pthread.h>
+#include <zephyr/shell/shell.h>
 
 void qt_main(void);
 K_THREAD_DEFINE(qt_main_tid,
@@ -177,6 +178,14 @@ static void control_receive_message(int sock, void *eloop_ctx, void *sock_ctx) {
         indigo_logger(LOG_LEVEL_INFO, "API %s: Return execution result", api->name);
         len = assemble_packet(cmd_rcv_buf, BUFFER_LEN, &resp);
         sendto(sock, (const char *)cmd_rcv_buf, len, MSG_CONFIRM, (const struct sockaddr *) &from, fromlen);
+        if(!strcmp(api->name, "DEVICE_RESET")) {
+                int ret;
+		indigo_logger(LOG_LEVEL_INFO,"%s", __func__);
+		k_msleep(500);
+                ret = shell_execute_cmd(NULL, "kernel reboot cold");
+		indigo_logger(LOG_LEVEL_INFO,"%d", ret);
+        }
+
     } else {
         indigo_logger(LOG_LEVEL_DEBUG, "API %s (0x%04x): No handle function", api ? api->name : "Unknown", req.hdr.type);
     }
