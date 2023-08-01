@@ -276,6 +276,7 @@ static int set_sta_power_save_handler(struct packet_wrapper *req, struct packet_
 static int start_wps_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int send_sta_icon_req_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
+#ifdef CONFIG_P2P
 /* P2P */
 static int start_up_p2p_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int p2p_find_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
@@ -288,4 +289,5 @@ static int get_p2p_intent_value_handler(struct packet_wrapper *req, struct packe
 static int p2p_invite_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int set_p2p_serv_disc_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int set_p2p_ext_listen_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
+#endif /* End Of CONFIG_P2P */
 #endif // __INDIGO_API_CALLBACK
