@@ -245,6 +245,8 @@ static int start_dhcp_handler(struct packet_wrapper *req, struct packet_wrapper 
 static int stop_dhcp_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int get_wsc_pin_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int get_wsc_cred_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
+
+#ifdef CONFIG_AP
 /* AP */
 static int stop_ap_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int configure_ap_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
@@ -258,6 +260,8 @@ static int trigger_ap_channel_switch(struct packet_wrapper *req, struct packet_w
 static int send_ap_arp_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int start_wps_ap_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int configure_ap_wsc_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
+#endif /* End Of CONFIG_AP */
+
 /* STA */
 static int stop_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int configure_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
@@ -282,6 +286,7 @@ static int set_sta_channel_width_handler(struct packet_wrapper *req, struct pack
 static int set_sta_power_save_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int start_wps_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
 static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
+
 #ifdef CONFIG_P2P
 /* P2P */
 static int start_up_p2p_handler(struct packet_wrapper *req, struct packet_wrapper *resp);
