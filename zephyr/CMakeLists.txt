@@ -19,6 +19,8 @@ zephyr_library_compile_definitions_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	CONFIG_ZEPHYR
 )
 
+zephyr_library_compile_definitions(CONFIG_CTRL_IFACE_ZEPHYR)
+
 zephyr_include_directories_ifdef(CONFIG_WFA_QT_CONTROL_APP
 	${SOURCES_BASE}
 	${SOURCES_BASE}/zephyr/include
