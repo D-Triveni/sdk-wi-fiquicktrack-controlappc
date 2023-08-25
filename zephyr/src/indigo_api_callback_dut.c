@@ -209,7 +209,7 @@ done:
 // RESP: {<ResponseTLV.STATUS: 40961>: '0', <ResponseTLV.MESSAGE: 40960>: 'AP stop completed : Hostapd service is inactive.'}
 static int stop_ap_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int reset = 0, status = TLV_VALUE_STATUS_NOT_OK;
-    char buffer[S_BUFFER_LEN], reset_type[16];
+    char reset_type[16];
     char *message = TLV_VALUE_HOSTAPD_STOP_NOT_OK;
     struct tlv_hdr *tlv = NULL;
 
@@ -1434,7 +1434,7 @@ static int stop_loop_back_server_handler(struct packet_wrapper *req, struct pack
 
 #ifdef CONFIG_AP
 static int send_ap_disconnect_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
-    int len, status = TLV_VALUE_STATUS_NOT_OK;
+    int status = TLV_VALUE_STATUS_NOT_OK;
     char buffer[S_BUFFER_LEN];
     char response[S_BUFFER_LEN];
     char address[32];
@@ -2333,7 +2333,6 @@ static int get_p2p_intent_value_handler(struct packet_wrapper *req, struct packe
     snprintf(response, sizeof(response), "%d", P2P_GO_INTENT);
 
 
-done:
     fill_wrapper_message_hdr(resp, API_CMD_RESPONSE, req->hdr.seq);
     fill_wrapper_tlv_byte(resp, TLV_STATUS, status);
     fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(message), message);
@@ -2429,7 +2428,7 @@ done:
 static int p2p_connect_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     struct wpa_ctrl *w = NULL;
     char buffer[S_BUFFER_LEN], response[BUFFER_LEN];
-    char pin_code[64], if_name[32];
+    char pin_code[64];
     char method[16], mac[32], type[16];
     size_t resp_len;
     int status = TLV_VALUE_STATUS_NOT_OK;
@@ -3244,7 +3243,7 @@ done:
 static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     char *message = TLV_VALUE_WPA_S_START_UP_NOT_OK;
     char buffer[L_BUFFER_LEN];
-    char value[S_BUFFER_LEN], cfg_item[2*S_BUFFER_LEN], buf[S_BUFFER_LEN];
+    char value[S_BUFFER_LEN], cfg_item[2*S_BUFFER_LEN];
     int i, len = 0, status = TLV_VALUE_STATUS_NOT_OK;
     struct tlv_hdr *tlv = NULL;
     struct tlv_to_config_name* cfg = NULL;
@@ -3300,7 +3299,6 @@ static int enable_wsc_sta_handler(struct packet_wrapper *req, struct packet_wrap
     status = TLV_VALUE_STATUS_OK;
     message = TLV_VALUE_WPA_S_START_UP_OK;
 
-done:
     fill_wrapper_message_hdr(resp, API_CMD_RESPONSE, req->hdr.seq);
     fill_wrapper_tlv_byte(resp, TLV_STATUS, status);
     fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(message), message);
