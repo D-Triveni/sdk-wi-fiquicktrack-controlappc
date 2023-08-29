@@ -660,6 +660,19 @@ int find_interface_ip(char *ipaddr, int ipaddr_len, char *name) {
 }
 
 int get_mac_address(char *buffer, int size, char *interface) {
+
+    STRUCT_SECTION_FOREACH(net_if, iface)
+    {
+        const struct device *dev = net_if_get_device(iface);
+        if(!strcmp(dev->name, interface)) {
+            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
+                    iface->if_dev->link_addr.addr[0]&0xff, iface->if_dev->link_addr.addr[1]&0xff,
+                    iface->if_dev->link_addr.addr[2]&0xff, iface->if_dev->link_addr.addr[3]&0xff,
+                    iface->if_dev->link_addr.addr[4]&0xff, iface->if_dev->link_addr.addr[5]&0xff);
+            return 0;
+        }
+    }
+
     return 1;
 }
 

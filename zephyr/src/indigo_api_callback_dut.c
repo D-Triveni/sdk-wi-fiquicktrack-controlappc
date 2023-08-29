@@ -130,7 +130,7 @@ static int get_control_app_handler(struct packet_wrapper *req, struct packet_wra
 static int reset_device_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
     char *message = TLV_VALUE_RESET_NOT_OK;
-    char role[TLV_VALUE_SIZE], log_level[TLV_VALUE_SIZE], band[TLV_VALUE_SIZE];
+    char role[32], log_level[32], band[32];
     struct tlv_hdr *tlv = NULL;
 
     /* TLV: ROLE */
@@ -1194,15 +1194,15 @@ static int get_mac_addr_handler(struct packet_wrapper *req, struct packet_wrappe
     char *message = TLV_VALUE_NOT_OK;
 
     char cmd[16];
-    char response[L_BUFFER_LEN];
+    char response[64];
 
-    char band[S_BUFFER_LEN];
-    char ssid[S_BUFFER_LEN];
-    char role[S_BUFFER_LEN];
+    char band[32];
+    char ssid[32];
+    char role[32];
 
-    char connected_freq[S_BUFFER_LEN];
-    char connected_ssid[S_BUFFER_LEN];
-    char mac_addr[S_BUFFER_LEN];
+    char connected_freq[32];
+    char connected_ssid[32];
+    char mac_addr[32];
     int bss_identifier = 0;
     struct interface_info* wlan = NULL;
     char bss_identifier_str[16];
