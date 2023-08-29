@@ -660,6 +660,22 @@ int find_interface_ip(char *ipaddr, int ipaddr_len, char *name) {
 }
 
 int get_mac_address(char *buffer, int size, char *interface) {
+
+    STRUCT_SECTION_FOREACH(net_if, iface)
+    {
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
+        const struct device *dev = net_if_get_device(iface);
+        if(!strcmp(dev->name, interface)) {
+            indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
+            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x",
+                    iface->if_dev->link_addr.addr[0]&0xff, iface->if_dev->link_addr.addr[1]&0xff,
+                    iface->if_dev->link_addr.addr[2]&0xff, iface->if_dev->link_addr.addr[3]&0xff,
+                    iface->if_dev->link_addr.addr[4]&0xff, iface->if_dev->link_addr.addr[5]&0xff);
+            indigo_logger(LOG_LEVEL_INFO, "%s - %d: mac_addr:%s", __func__, __LINE__, buffer);
+            return 0;
+        }
+    }
+
     return 1;
 }
 
@@ -1037,16 +1053,21 @@ int parse_wireless_interface_info(char *info) {
 
 char* get_default_wireless_interface_info() {
     int i;
+    indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
     for (i = 0; i < interface_count; i++) {
         if (interfaces[i].identifier != UNUSED_IDENTIFIER) {
+    	    indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
             return interfaces[i].ifname;
         }
     }
     if (default_interface) {
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
         return default_interface->ifname;
     }
-    else
+    else {
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d - %s", __func__, __LINE__, interfaces[0].ifname);
         return interfaces[0].ifname;
+    }
 }
 
 void set_default_wireless_interface_info(int band) {
@@ -1151,6 +1172,7 @@ int set_wireless_interface(char *name) {
     if (strstr(name, ":") || strstr(name, ",")) {
         return parse_wireless_interface_info(name);
     } else {
+    	indigo_logger(LOG_LEVEL_INFO, "%s - %d", __func__, __LINE__);
         add_wireless_interface_info(BAND_24GHZ, -1, name);
         add_wireless_interface_info(BAND_5GHZ, -1, name);
     }

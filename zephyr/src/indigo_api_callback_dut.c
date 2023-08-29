@@ -130,7 +130,7 @@ static int get_control_app_handler(struct packet_wrapper *req, struct packet_wra
 static int reset_device_handler(struct packet_wrapper *req, struct packet_wrapper *resp) {
     int status = TLV_VALUE_STATUS_NOT_OK;
     char *message = TLV_VALUE_RESET_NOT_OK;
-    char role[TLV_VALUE_SIZE], log_level[TLV_VALUE_SIZE], band[TLV_VALUE_SIZE];
+    char role[32], log_level[32], band[32];
     struct tlv_hdr *tlv = NULL;
 
     /* TLV: ROLE */
@@ -1195,15 +1195,15 @@ static int get_mac_addr_handler(struct packet_wrapper *req, struct packet_wrappe
     char *message = TLV_VALUE_NOT_OK;
 
     char cmd[16];
-    char response[L_BUFFER_LEN];
+    char response[64];
 
-    char band[S_BUFFER_LEN];
-    char ssid[S_BUFFER_LEN];
-    char role[S_BUFFER_LEN];
+    char band[32];
+    char ssid[32];
+    char role[32];
 
-    char connected_freq[S_BUFFER_LEN];
-    char connected_ssid[S_BUFFER_LEN];
-    char mac_addr[S_BUFFER_LEN];
+    char connected_freq[32];
+    char connected_ssid[32];
+    char mac_addr[32];
     int bss_identifier = 0;
     struct interface_info* wlan = NULL;
     char bss_identifier_str[16];
@@ -1212,7 +1212,9 @@ static int get_mac_addr_handler(struct packet_wrapper *req, struct packet_wrappe
     struct wpa_supplicant *wpa_s = NULL;
 
     if (req->tlv_num == 0) {
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d: interface:%s", __func__, __LINE__, get_wireless_interface());
         get_mac_address(mac_addr, sizeof(mac_addr), get_wireless_interface());
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d: mac_addr:%s", __func__, __LINE__, mac_addr);
         status = TLV_VALUE_STATUS_OK;
         message = TLV_VALUE_OK;
 
@@ -1367,6 +1369,7 @@ done:
     fill_wrapper_tlv_byte(resp, TLV_STATUS, status);
     if (status == TLV_VALUE_STATUS_OK) {
         fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(mac_addr), mac_addr);
+        indigo_logger(LOG_LEVEL_INFO, "%s - %d: mac_addr:%s", __func__, __LINE__, mac_addr);
         fill_wrapper_tlv_bytes(resp, TLV_DUT_MAC_ADDR, strlen(mac_addr), mac_addr);
     } else {
         fill_wrapper_tlv_bytes(resp, TLV_MESSAGE, strlen(message), message);
@@ -1742,7 +1745,7 @@ static void append_wpas_network_default_config(struct packet_wrapper *wrapper) {
 
 void generate_sta_config(struct wpa_ctrl *w, struct packet_wrapper *req) {
     struct tlv_hdr *tlv = NULL;
-    char buffer[64], response[16], psk[64];
+    char buffer[64], response[16], psk[16];
     size_t resp_len;
 
     tlv = find_wrapper_tlv_by_id(req, TLV_STA_SSID);
