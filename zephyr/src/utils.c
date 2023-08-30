@@ -36,6 +36,11 @@ typedef uint32_t u_int32_t;
 #include "utils.h"
 #include "eloop.h"
 
+#include <common/wpa_ctrl.h>
+#include <ctrl_iface_zephyr.h>
+#include <supp_main.h>
+#include <l2_packet/l2_packet.h>
+
 #define ICMP_ECHO 8
 #define ICMP_ECHOREPLY 0
 #define usleep(x) k_sleep(K_SECONDS((x)/1000000))
@@ -656,7 +661,20 @@ int send_broadcast_arp(char *target_ip, int *send_count, int rate) {
 }
 
 int find_interface_ip(char *ipaddr, int ipaddr_len, char *name) {
-    return 0;
+    struct wpa_supplicant *wpa_s;
+    char tmp[30];
+
+    wpa_s = z_wpas_get_handle_by_ifname(name);
+    if (!wpa_s) {
+        indigo_logger(LOG_LEVEL_ERROR, "Unable to find the interface: %s, quitting", name);
+        return 0;
+    }
+
+    if (wpa_s->l2 && l2_packet_get_ip_addr(wpa_s->l2, tmp, sizeof(tmp)) >= 0) {
+        strcpy(ipaddr, tmp);
+    }
+
+    return 1;
 }
 
 int get_mac_address(char *buffer, int size, char *interface) {
