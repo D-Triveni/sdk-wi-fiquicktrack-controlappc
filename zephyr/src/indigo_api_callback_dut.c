@@ -155,7 +155,6 @@ static int reset_device_handler(struct packet_wrapper *req, struct packet_wrappe
     }
 
     if (atoi(role) == DUT_TYPE_STAUT) {
-        /* TODO: Implement this for zephyr */
     } else if (atoi(role) == DUT_TYPE_APUT) {
 #ifdef CONFIG_AP
         /* TODO: Implement this for zephyr */
