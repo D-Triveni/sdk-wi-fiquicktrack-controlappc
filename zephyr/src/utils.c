@@ -270,7 +270,7 @@ int loopback_server_start(char *local_ip, char *local_port, int timeout) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     if (local_ip) {
-        addr.sin_addr.s_addr = inet_addr(local_ip);
+        net_addr_pton(AF_INET, local_ip, &addr.sin_addr.s_addr);
     }
 
     if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
