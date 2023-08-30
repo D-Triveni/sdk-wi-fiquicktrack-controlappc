@@ -2003,7 +2003,7 @@ static int send_sta_reconnect_handler(struct packet_wrapper *req, struct packet_
     }
     /* Send command to hostapd UDS socket */
     memset(buffer, 0, sizeof(buffer));
-    sprintf(buffer, "RECONNECT");
+    sprintf(buffer, "REASSOCIATE");
     memset(response, 0, sizeof(response));
     resp_len = sizeof(response) - 1;
     wpa_ctrl_request(w, buffer, strlen(buffer), response, &resp_len, NULL);
