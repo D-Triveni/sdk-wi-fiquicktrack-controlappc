@@ -19,6 +19,8 @@
 LOG_MODULE_REGISTER(wfa_qt, CONFIG_WFA_QT_LOG_LEVEL);
 int control_socket_init(int port);
 void qt_main(void);
+int wpa_supp_events_register(void);
+int wait_for_wpa_s_ready(void);
 K_THREAD_DEFINE(qt_main_tid,
                 CONFIG_WFA_QT_THREAD_STACK_SIZE,
                 qt_main,
@@ -36,6 +38,13 @@ static void print_welcome() {
 
 void qt_main(void) {
     int service_socket = -1;
+    int ret;
+
+    ret = wpa_supp_events_register();
+    ret = wait_for_wpa_s_ready();
+    if (ret < 0) {
+	    LOG_DBG("Control interface is not initialized");
+    }
 
     /* Welcome message */
     print_welcome();
